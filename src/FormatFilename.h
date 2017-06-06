@@ -11,6 +11,8 @@
 #endif
 #else
 #include <sys/stat.h>
+#include <dirent.h>
+#include <string.h>
 #endif
 
 #include <iostream>

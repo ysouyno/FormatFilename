@@ -162,6 +162,48 @@ void rename_dir(const std::wstring & path_file)
   rename(tmp_old.c_str(), tmp_new.c_str());
 }
 
+#if defined(_MSC_VER)
+#else
+// FIXME: how to rename directory's name so that its sub-directories can be opened
+// FIXME: the conversions between std::string and std::wstring are very poor
+void linux_list_dirs_and_files(const std::wstring & path_file)
+{
+  DIR *dir;
+  struct dirent *entry;
+  std::string in_path_file = ws2s(path_file);
+
+  if (!(dir = opendir(in_path_file.c_str()))) {
+    std::wcout << "opendir " << in_path_file.c_str() << "error" << std::endl;
+    return;
+  }
+
+  if (!(entry = readdir(dir))) {
+    std::wcout << "readdir " << in_path_file.c_str() << "error" << std::endl;
+    return;
+  }
+
+  do {
+    if (DT_DIR == entry->d_type) {
+      char path[1024] = { 0 };
+      size_t len = snprintf(path, sizeof(path) - 1, "%s/%s",
+			    in_path_file.c_str(), entry->d_name);
+      path[len] = 0;
+      if (0 == strcmp(entry->d_name, ".") || 0 == strcmp(entry->d_name, ".."))
+        continue;
+      std::string tmp(path);
+      std::wstring w_tmp = s2ws(tmp);
+      std::cout << "directory: " << entry->d_name << std::endl;
+      linux_list_dirs_and_files(w_tmp);
+    }
+    else {
+      std::cout << "file: " << entry->d_name << std::endl;
+    }
+  } while (entry = readdir(dir));
+
+  closedir(dir);
+}
+#endif
+
 void rename_dirs_and_files(const std::wstring & path_file)
 {
   size_t files_count = 0, directories_count = 0;
@@ -219,11 +261,17 @@ void rename_dirs_and_files(const std::wstring & path_file)
 
   FindClose(h_file);
 #endif
+#else
   // TODO: list all files and sub-directories in a directory in linux
+  linux_list_dirs_and_files(path_file);
 #endif
 
   // rename the last directory
-  rename_dir(path_file);
+
+  // need to comment out this code, if argv[1] is /aa/bb/cc, it will create
+  // a new directory and named aa_bb_cc, at the same time, all the files in
+  // cc will be moved to aa_bb_cc
+  /*rename_dir(path_file); */
 
   std::cout << "1 directory, " << directories_count << " sub directories, ";
   std::cout << files_count << " files" << std::endl;
