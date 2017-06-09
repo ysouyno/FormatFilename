@@ -1,5 +1,7 @@
 #include "FormatFilename.h"
 
+// FIXME: the conversion between std::string and std::wstring does not work in windows
+
 std::wstring s2ws(const std::string & str)
 {
   if (str.empty()) {
@@ -74,27 +76,38 @@ bool file_is_directory(const std::wstring & path_file)
 #endif
 }
 
-bool is_target_en_char(wchar_t wc)
+bool is_target_character(const wchar_t & wc)
 {
-  static std::wstring target_en_char(L" `~!@#$%^&*()-=+[]{};:'\"|,.<>?/");
-  return std::wstring::npos != target_en_char.find(wc);
-}
+  bool ret = false;
 
-bool is_target_cn_char(wchar_t wc)
-{
-  // see below in visual studio "/？" need change to "？/"
-  // or you will get error C2001: newline in constant
-  static std::
-    wstring
-    target_cn_char
-    (L" ·~！@#￥%……&*（）-——=+【】{}；：‘’“”、|，。《》？/");
-  return std::wstring::npos != target_cn_char.find(wc);
+  wchar_t target_character[] = {
+    L'\x20', L'\x21', L'\x22', L'\x23', L'\x24', L'\x25', L'\x26',
+    L'\x27', L'\x28', L'\x29', L'\x2a', L'\x2b', L'\x2c', L'\x2d',
+    L'\x2e', L'\x2f', L'\x3a', L'\x3b', L'\x3c', L'\x3d', L'\x3e',
+    L'\x3f', L'\x40', L'\x5b', L'\x5c', L'\x5d', L'\x5e', L'\x5f',
+    L'\x60', L'\x7b', L'\x7c', L'\x7d', L'\x7e',
+    L'\x3002', L'\xff1f', L'\xff01', L'\xff0c', L'\x3001', L'\xff1b',
+    L'\xff1a', L'\x300c', L'\x300d', L'\x300e', L'\x300f', L'\x2018',
+    L'\x2019', L'\x201c', L'\x201d', L'\xff08', L'\xff09', L'\x3014',
+    L'\x3015', L'\x3010', L'\x3011', L'\x2014', L'\x2026', L'\x2013',
+    L'\xff0e', L'\x300a', L'\x300b', L'\x3008', L'\x3009'
+  };
+
+  for (size_t i = 0;
+       i < sizeof(target_character) / sizeof(target_character[0]); i++) {
+    if (wc == target_character[i]) {
+      ret = true;
+      break;
+    }
+  }
+
+  return ret;
 }
 
 void gen_new_name(std::wstring & file_name)
 {
-  std::replace_if(file_name.begin(), file_name.end(), is_target_en_char, '_');
-  std::replace_if(file_name.begin(), file_name.end(), is_target_cn_char, '_');
+  std::replace_if(file_name.begin(), file_name.end(), is_target_character,
+		  '_');
 
   for (size_t i = 1; i < file_name.size(); i++) {
     if ('_' == file_name.at(i - 1) && '_' == file_name.at(i)) {
@@ -189,7 +202,7 @@ void linux_list_dirs_and_files(const std::wstring & path_file)
 			    in_path_file.c_str(), entry->d_name);
       path[len] = 0;
       if (0 == strcmp(entry->d_name, ".") || 0 == strcmp(entry->d_name, ".."))
-        continue;
+	continue;
       std::string tmp(path);
       std::wstring w_tmp = s2ws(tmp);
       std::cout << "directory: " << entry->d_name << std::endl;
