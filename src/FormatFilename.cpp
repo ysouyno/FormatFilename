@@ -1,6 +1,7 @@
 #include "FormatFilename.h"
 
-// FIXME: the conversion between std::string and std::wstring does not work in windows
+// [*] FIXME: the conversion between std::string and std::wstring does not work in windows
+// [ ] FIXME: if windows is the english environment will not be able to rename the path containing chinese characters
 
 std::wstring s2ws(const std::string & str)
 {
@@ -8,7 +9,7 @@ std::wstring s2ws(const std::string & str)
     return L"";
   }
 
-  setlocale(LC_CTYPE, "en_US.UTF-8");
+  setlocale(LC_CTYPE, "");
   size_t len = str.size() + 1;
   wchar_t *p = new wchar_t[len];
   mbstowcs(p, str.c_str(), len);
@@ -24,7 +25,7 @@ std::string ws2s(const std::wstring & w_str)
     return "";
   }
 
-  setlocale(LC_CTYPE, "en_US.UTF-8");
+  setlocale(LC_CTYPE, "");
   size_t len = w_str.size() * 4 + 1;
   char *p = new char[len];
   wcstombs(p, w_str.c_str(), len);
@@ -76,6 +77,7 @@ bool file_is_directory(const std::wstring & path_file)
 #endif
 }
 
+// [ ] FIXME: after use unicode encoding instead of characters, can rename files with chinese characters in linux, but shell output garbled
 bool is_target_character(const wchar_t & wc)
 {
   bool ret = false;
@@ -177,8 +179,8 @@ void rename_dir(const std::wstring & path_file)
 
 #if defined(_MSC_VER)
 #else
-// FIXME: how to rename directory's name so that its sub-directories can be opened
-// FIXME: the conversions between std::string and std::wstring are very poor
+// [ ] FIXME: how to rename directory's name so that its sub-directories can be opened
+// [ ] FIXME: the conversions between std::string and std::wstring are very poor
 void linux_list_dirs_and_files(const std::wstring & path_file)
 {
   DIR *dir;
@@ -274,6 +276,11 @@ void rename_dirs_and_files(const std::wstring & path_file)
 
   FindClose(h_file);
 #endif
+  // rename the topmost directory
+  rename_dir(path_file);
+
+  std::cout << "1 directory, " << directories_count << " sub directories, ";
+  std::cout << files_count << " files" << std::endl;
 #else
   // TODO: list all files and sub-directories in a directory in linux
   linux_list_dirs_and_files(path_file);
@@ -285,7 +292,4 @@ void rename_dirs_and_files(const std::wstring & path_file)
   // a new directory and named aa_bb_cc, at the same time, all the files in
   // cc will be moved to aa_bb_cc
   /*rename_dir(path_file); */
-
-  std::cout << "1 directory, " << directories_count << " sub directories, ";
-  std::cout << files_count << " files" << std::endl;
 }
