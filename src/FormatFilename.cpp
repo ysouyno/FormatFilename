@@ -1,7 +1,7 @@
 #include "FormatFilename.h"
 
 // [*] FIXME: the conversion between std::string and std::wstring does not work in windows
-// [ ] FIXME: if windows is the english environment will not be able to rename the path containing chinese characters
+// [*] FIXME: if windows is the english environment will not be able to rename the path containing chinese characters
 
 std::wstring s2ws(const std::string & str)
 {
@@ -12,6 +12,7 @@ std::wstring s2ws(const std::string & str)
   setlocale(LC_CTYPE, "");
   size_t len = str.size() + 1;
   wchar_t *p = new wchar_t[len];
+  memset(p, 0, len);
   mbstowcs(p, str.c_str(), len);
   std::wstring w_str(p);
   delete[]p;
@@ -28,6 +29,7 @@ std::string ws2s(const std::wstring & w_str)
   setlocale(LC_CTYPE, "");
   size_t len = w_str.size() * 4 + 1;
   char *p = new char[len];
+  memset(p, 0, len);
   wcstombs(p, w_str.c_str(), len);
   std::string str(p);
   delete[]p;
@@ -150,9 +152,13 @@ void rename_file(const std::wstring & path_file)
   file_path.append(file_name);
   std::wcout << "New path file: " << file_path.c_str() << std::endl;
 
+#if defined(_MSC_VER)
+  _wrename(path_file.c_str(), file_path.c_str());
+#else
   std::string tmp_old = ws2s(path_file);
   std::string tmp_new = ws2s(file_path);
   rename(tmp_old.c_str(), tmp_new.c_str());
+#endif
 }
 
 void rename_dir(const std::wstring & path_file)
@@ -172,9 +178,13 @@ void rename_dir(const std::wstring & path_file)
   new_path.append(dir_name);
   std::wcout << "New path file: " << new_path.c_str() << std::endl;
 
+#if defined(_MSC_VER)
+  _wrename(path_file.c_str(), new_path.c_str());
+#else
   std::string tmp_old = ws2s(path_file);
   std::string tmp_new = ws2s(new_path);
   rename(tmp_old.c_str(), tmp_new.c_str());
+#endif
 }
 
 #if defined(_MSC_VER)
@@ -238,6 +248,7 @@ void rename_dirs_and_files(const std::wstring & path_file)
   for (std::tr2::sys::recursive_directory_iterator it(path_file.c_str()), end;
        it != end; ++it) {
     if (std::tr2::sys::is_directory(it->path())) {
+      rename_dirs_and_files(it->path());
       rename_dir(it->path());
       directories_count++;
     }
@@ -248,7 +259,7 @@ void rename_dirs_and_files(const std::wstring & path_file)
   ZeroMemory(&wfd, sizeof(wfd));
 
   std::wstring new_path(path_file);
-  new_path.append(L"\\*.*");
+  new_path.append(L"\\*");
 
   HANDLE h_file = FindFirstFileW(new_path.c_str(), &wfd);
   if (INVALID_HANDLE_VALUE == h_file) {
@@ -269,6 +280,7 @@ void rename_dirs_and_files(const std::wstring & path_file)
     }
     // directories
     else {
+      rename_dirs_and_files(str);
       rename_dir(str);
       directories_count++;
     }
