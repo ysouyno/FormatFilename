@@ -79,17 +79,16 @@ bool file_is_directory(const std::wstring & path_file)
 #endif
 }
 
-// [ ] FIXME: after use unicode encoding instead of characters, can rename files with chinese characters in linux, but shell output garbled
-bool is_target_character(const wchar_t & wc)
+// [*] FIXME: after use unicode encoding instead of characters, can rename files with chinese characters in linux, but shell output garbled
+bool is_forbid_character(const wchar_t & wc)
 {
   bool ret = false;
 
-  wchar_t target_character[] = {
-    L'\x20', L'\x21', L'\x22', L'\x23', L'\x24', L'\x25', L'\x26',
-    L'\x27', L'\x28', L'\x29', L'\x2a', L'\x2b', L'\x2c', L'\x2d',
-    L'\x2e', L'\x2f', L'\x3a', L'\x3b', L'\x3c', L'\x3d', L'\x3e',
-    L'\x3f', L'\x40', L'\x5b', L'\x5c', L'\x5d', L'\x5e', L'\x5f',
-    L'\x60', L'\x7b', L'\x7c', L'\x7d', L'\x7e',
+  wchar_t forbid_character[] = {
+    L'\x20', L'\x21', L'\x22', L'\x23', L'\x24', L'\x25', L'\x26', L'\x27',
+    L'\x28', L'\x29', L'\x2a', L'\x2b', L'\x2c', L'\x2d', L'\x2e', L'\x3a',
+    L'\x3b', L'\x3c', L'\x3d', L'\x3e', L'\x3f', L'\x40', L'\x5b', L'\x5d',
+    L'\x5e', L'\x5f', L'\x60', L'\x7b', L'\x7c', L'\x7d', L'\x7e',
     L'\x3002', L'\xff1f', L'\xff01', L'\xff0c', L'\x3001', L'\xff1b',
     L'\xff1a', L'\x300c', L'\x300d', L'\x300e', L'\x300f', L'\x2018',
     L'\x2019', L'\x201c', L'\x201d', L'\xff08', L'\xff09', L'\x3014',
@@ -98,8 +97,8 @@ bool is_target_character(const wchar_t & wc)
   };
 
   for (size_t i = 0;
-       i < sizeof(target_character) / sizeof(target_character[0]); i++) {
-    if (wc == target_character[i]) {
+       i < sizeof(forbid_character) / sizeof(forbid_character[0]); i++) {
+    if (wc == forbid_character[i]) {
       ret = true;
       break;
     }
@@ -110,7 +109,7 @@ bool is_target_character(const wchar_t & wc)
 
 void gen_new_name(std::wstring & file_name)
 {
-  std::replace_if(file_name.begin(), file_name.end(), is_target_character,
+  std::replace_if(file_name.begin(), file_name.end(), is_forbid_character,
 		  '_');
 
   for (size_t i = 1; i < file_name.size(); i++) {
@@ -148,9 +147,17 @@ void rename_file(const std::wstring & path_file)
   gen_new_name(file_name);
 
   file_name.append(file_extn);
+#if defined(_MSC_VER)
   std::wcout << "Org path file: " << path_file.c_str() << std::endl;
+#else
+  printf("%S\n", path_file.c_str());
+#endif
   file_path.append(file_name);
+#if defined(_MSC_VER)
   std::wcout << "New path file: " << file_path.c_str() << std::endl;
+#else
+  printf("%S\n", file_path.c_str());
+#endif
 
 #if defined(_MSC_VER)
   _wrename(path_file.c_str(), file_path.c_str());
@@ -164,7 +171,11 @@ void rename_file(const std::wstring & path_file)
 void rename_dir(const std::wstring & path_file)
 {
   std::wstring new_path(path_file);
+#if defined(_MSC_VER)
   std::wcout << "Org path file: " << path_file.c_str() << std::endl;
+#else
+  printf("%S\n", path_file.c_str());
+#endif
   size_t pos = new_path.find_last_of('\\');
   if (pos == new_path.size() - 1)
     new_path.erase(pos, new_path.size() - pos);
@@ -176,7 +187,11 @@ void rename_dir(const std::wstring & path_file)
   gen_new_name(dir_name);
 
   new_path.append(dir_name);
+#if defined(_MSC_VER)
   std::wcout << "New path file: " << new_path.c_str() << std::endl;
+#else
+  printf("%S\n", new_path.c_str());
+#endif
 
 #if defined(_MSC_VER)
   _wrename(path_file.c_str(), new_path.c_str());
@@ -295,7 +310,8 @@ void rename_dirs_and_files(const std::wstring & path_file)
   std::cout << files_count << " files" << std::endl;
 #else
   // TODO: list all files and sub-directories in a directory in linux
-  linux_list_dirs_and_files(path_file);
+  /*linux_list_dirs_and_files(path_file); */
+  rename_dir(path_file);
 #endif
 
   // rename the last directory
