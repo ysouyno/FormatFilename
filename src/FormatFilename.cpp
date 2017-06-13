@@ -150,13 +150,13 @@ void rename_file(const std::wstring & path_file)
 #if defined(_MSC_VER)
   std::wcout << "Org path file: " << path_file.c_str() << std::endl;
 #else
-  printf("%S\n", path_file.c_str());
+  printf("Org path file: %S\n", path_file.c_str());
 #endif
   file_path.append(file_name);
 #if defined(_MSC_VER)
   std::wcout << "New path file: " << file_path.c_str() << std::endl;
 #else
-  printf("%S\n", file_path.c_str());
+  printf("New path file: %S\n", file_path.c_str());
 #endif
 
 #if defined(_MSC_VER)
@@ -174,13 +174,20 @@ void rename_dir(const std::wstring & path_file)
 #if defined(_MSC_VER)
   std::wcout << "Org path file: " << path_file.c_str() << std::endl;
 #else
-  printf("%S\n", path_file.c_str());
+  printf("Org path file: %S\n", path_file.c_str());
 #endif
+#if defined(_MSC_VER)
   size_t pos = new_path.find_last_of('\\');
+#else
+  size_t pos = new_path.find_last_of('/');
+#endif
   if (pos == new_path.size() - 1)
     new_path.erase(pos, new_path.size() - pos);
-
+#if defined(_MSC_VER)
   pos = new_path.find_last_of('\\');
+#else
+  pos = new_path.find_last_of('/');
+#endif
   std::wstring dir_name = new_path.substr(pos + 1, new_path.size() - pos);
   new_path = new_path.substr(0, pos + 1);
 
@@ -190,7 +197,7 @@ void rename_dir(const std::wstring & path_file)
 #if defined(_MSC_VER)
   std::wcout << "New path file: " << new_path.c_str() << std::endl;
 #else
-  printf("%S\n", new_path.c_str());
+  printf("New path file: %S\n", new_path.c_str());
 #endif
 
 #if defined(_MSC_VER)
